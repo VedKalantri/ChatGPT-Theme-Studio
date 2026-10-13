@@ -42,18 +42,21 @@ console.assert(safeOutput.bgOpacity === 10, 'Opacity should clamp to minimum 10'
 console.assert(safeOutput.bgBlur === 12, 'Blur should clamp to maximum 12');
 console.assert(safeOutput.bgPosition === 'center', 'Invalid position should fall back to center');
 console.assert(safeOutput.bgSize === 'cover', 'Invalid size should fall back to cover');
+console.assert(safeOutput.bgOriginalImage === null, 'Invalid bgOriginalImage should be null');
 console.log('✓ Sanitization correctly neutralized all invalid/unsafe inputs');
 
-console.log('--- Functional Test 3: Valid Data URL Storage ---');
+console.log('--- Functional Test 3: Valid Data URL Storage & Cropping ---');
 const validDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 const safeDataUrlOutput = themesModule.UTILS.sanitizeSettings({
   bgImage: validDataUrl,
+  bgOriginalImage: validDataUrl,
   bgOpacity: 70,
   bgBlur: 5,
   bgPosition: 'top',
   bgSize: 'contain'
 });
 console.assert(safeDataUrlOutput.bgImage === validDataUrl, 'Valid data URL should be preserved');
+console.assert(safeDataUrlOutput.bgOriginalImage === validDataUrl, 'Valid bgOriginalImage should be preserved');
 console.assert(safeDataUrlOutput.bgOpacity === 70, 'Valid opacity should be preserved');
 console.assert(safeDataUrlOutput.bgBlur === 5, 'Valid blur should be preserved');
 console.assert(safeDataUrlOutput.bgPosition === 'top', 'Valid position should be preserved');

@@ -15,6 +15,14 @@ With Theme Studio, you can set custom wallpaper backgrounds for your chat interf
   - Live thumbnail preview in the extension popup.
   - Purely local persistence via `chrome.storage.local` — **no external servers or data transmission**.
 
+- **Interactive Photo Crop & Repositioning Studio**:
+  - **Visual Panning**: Click and drag (or touch drag) the image inside the framing viewport to reposition your subject.
+  - **Interactive Zoom**: Zoom slider (1.0x to 3.5x) or mouse wheel to zoom in on specific focal points.
+  - **Aspect Ratio Presets**: 16:9 (standard desktop/laptop), 16:10 (MacBook/tall monitors), 4:3, or Original.
+  - **Rotation**: Rotate 90° clockwise with one click to fix sideways photos.
+  - **Rule of Thirds Overlay**: Visual framing grid for perfect composition.
+  - **High-Resolution Export**: Renders high-resolution 1080p/4K crops with 0ms live broadcast to ChatGPT.
+
 - **Fine-Grained Display Controls**:
   - **Opacity**: Adjustable from 10% to 100% to blend the wallpaper with the base background.
   - **Blur**: Adjustable from 0 to 12 px for subtle ambient depth and text legibility.

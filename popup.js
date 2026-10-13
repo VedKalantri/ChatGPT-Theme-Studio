@@ -1,6 +1,7 @@
 /**
  * ChatGPT Theme Studio - Popup Controller
- * Manages user interactions, theme presets, image uploads, and real-time live synchronization.
+ * Manages user interactions, theme presets, image uploads, interactive photo cropping/repositioning,
+ * and 0ms real-time tab synchronization.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const bgThumbPlaceholder = document.getElementById('bg-thumb-placeholder');
   const fileInput = document.getElementById('bg-file-input');
   const btnUpload = document.getElementById('btn-upload');
+  const btnCrop = document.getElementById('btn-crop');
   const btnRemoveImage = document.getElementById('btn-remove-image');
   const bgColorPicker = document.getElementById('bg-color-picker');
   const bgColorText = document.getElementById('bg-color-text');
@@ -42,8 +44,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnReset = document.getElementById('btn-reset');
   const statusMessage = document.getElementById('status-message');
 
+  // Crop Modal DOM
+  const cropModal = document.getElementById('crop-modal');
+  const btnCloseCrop = document.getElementById('btn-close-crop');
+  const btnCancelCrop = document.getElementById('btn-cancel-crop');
+  const btnApplyCrop = document.getElementById('btn-apply-crop');
+  const cropCanvas = document.getElementById('crop-canvas');
+  const cropViewport = document.getElementById('crop-viewport');
+  const cropZoomSlider = document.getElementById('crop-zoom-slider');
+  const cropZoomVal = document.getElementById('crop-zoom-val');
+  const btnRotate = document.getElementById('btn-rotate');
+  const aspectButtons = document.querySelectorAll('.cgts-aspect-group .cgts-pill-btn');
+
   // Debounce timers
   const debounceTimers = {};
+
+  // Crop / Reposition State
+  const cropState = {
+    imageObj: null,
+    scale: 1.0,
+    panX: 0,
+    panY: 0,
+    rotation: 0,
+    aspectRatio: 16 / 9,
+    isDragging: false,
+    dragStartX: 0,
+    dragStartY: 0,
+    initialPanX: 0,
+    initialPanY: 0
+  };
 
   /**
    * Broadcast settings immediately to all active ChatGPT tabs for 0ms real-time preview
@@ -59,14 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
           chrome.tabs.sendMessage(tab.id, {
             type: 'CGTS_APPLY_SETTINGS',
             settings: settings
-          }).catch(() => {
-            // Content script might be dormant or page loading
-          });
+          }).catch(() => {});
         });
       }
     });
 
-    // Also check active tab in current window
+    // Also send to active tab in current window
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs && tabs[0] && tabs[0].url && tabs[0].url.includes('chatgpt.com')) {
         chrome.tabs.sendMessage(tabs[0].id, {
@@ -98,8 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Persist a specific setting key without reserializing large data
-   * Also broadcasts immediately to active tabs.
+   * Persist a specific setting key and broadcast to tabs
    * @param {string} key 
    * @param {*} value 
    * @param {Function} [callback] 
@@ -111,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (chrome && chrome.storage && chrome.storage.local) {
       chrome.storage.local.set({ [key]: value }, () => {
         if (chrome.runtime.lastError) {
-          showStatus('Error saving setting: ' + chrome.runtime.lastError.message, 'error');
+          showStatus('Error saving: ' + chrome.runtime.lastError.message, 'error');
         } else if (callback) {
           callback();
         }
@@ -196,12 +222,10 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSettings.bgColor = theme.bgColor;
     currentSettings.accentColor = theme.accentColor;
 
-    // Update UI elements
     updatePresetSelectionUI();
     updateBgColorUI(theme.bgColor);
     updateAccentColorUI(theme.accentColor);
 
-    // Save batch to storage and broadcast in real-time
     saveSettingsBatch({
       themeId: theme.id,
       bgColor: theme.bgColor,
@@ -245,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Update image thumbnail preview
+   * Update image thumbnail preview and action buttons
    */
   function updateImageThumbnailUI() {
     if (currentSettings.bgImage) {
@@ -253,11 +277,13 @@ document.addEventListener('DOMContentLoaded', () => {
       bgThumbImg.classList.remove('hidden');
       bgThumbPlaceholder.classList.add('hidden');
       btnRemoveImage.classList.remove('hidden');
+      btnCrop.classList.remove('hidden');
     } else {
       bgThumbImg.src = '';
       bgThumbImg.classList.add('hidden');
       bgThumbPlaceholder.classList.remove('hidden');
       btnRemoveImage.classList.add('hidden');
+      btnCrop.classList.add('hidden');
     }
   }
 
@@ -356,7 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Output format based on original type
           const format = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
           const quality = 0.90;
           const dataUrl = canvas.toDataURL(format, quality);
@@ -369,7 +394,238 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --------------------------------------------------------------------------
-  // Event Listeners (with INSTANT live broadcast on input)
+  // Crop & Reposition Modal Engine
+  // --------------------------------------------------------------------------
+
+  /**
+   * Open the crop and reposition modal with current image
+   */
+  function openCropModal() {
+    const srcDataUrl = currentSettings.bgOriginalImage || currentSettings.bgImage;
+    if (!srcDataUrl) {
+      showStatus('No image to edit', 'error');
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      cropState.imageObj = img;
+      cropState.scale = 1.0;
+      cropState.panX = 0;
+      cropState.panY = 0;
+      cropState.rotation = 0;
+      cropZoomSlider.value = '1.0';
+      cropZoomVal.textContent = '1.0x';
+
+      cropModal.classList.remove('hidden');
+      renderCropPreview();
+    };
+    img.onerror = () => {
+      showStatus('Failed to load image for editing', 'error');
+    };
+    img.src = srcDataUrl;
+  }
+
+  /**
+   * Close the crop modal
+   */
+  function closeCropModal() {
+    cropModal.classList.add('hidden');
+    cropState.isDragging = false;
+  }
+
+  /**
+   * Render the interactive crop preview canvas
+   */
+  function renderCropPreview() {
+    if (!cropState.imageObj) return;
+
+    const canvasW = 340;
+    let canvasH = 191; // default 16:9
+
+    if (cropState.aspectRatio === 'original') {
+      const origAspect = cropState.imageObj.width / cropState.imageObj.height;
+      canvasH = Math.max(140, Math.min(230, Math.round(canvasW / origAspect)));
+    } else {
+      canvasH = Math.round(canvasW / cropState.aspectRatio);
+    }
+
+    cropViewport.style.height = `${canvasH}px`;
+    cropCanvas.width = canvasW;
+    cropCanvas.height = canvasH;
+
+    const ctx = cropCanvas.getContext('2d');
+    ctx.clearRect(0, 0, canvasW, canvasH);
+
+    // Determine dimensions considering rotation
+    const isSideways = cropState.rotation === 90 || cropState.rotation === 270;
+    const effW = isSideways ? cropState.imageObj.height : cropState.imageObj.width;
+    const effH = isSideways ? cropState.imageObj.width : cropState.imageObj.height;
+
+    // Minimum scale to cover canvas
+    const baseCoverScale = Math.max(canvasW / effW, canvasH / effH);
+    const drawScale = baseCoverScale * cropState.scale;
+
+    ctx.save();
+    ctx.translate((canvasW / 2) + cropState.panX, (canvasH / 2) + cropState.panY);
+    ctx.rotate((cropState.rotation * Math.PI) / 180);
+    ctx.scale(drawScale, drawScale);
+    ctx.drawImage(cropState.imageObj, -cropState.imageObj.width / 2, -cropState.imageObj.height / 2);
+    ctx.restore();
+  }
+
+  /**
+   * Export the high-resolution cropped image and apply it to ChatGPT
+   */
+  function applyCroppedImage() {
+    if (!cropState.imageObj) return;
+
+    showStatus('Applying crop...', 'info');
+
+    const exportW = 1920;
+    let exportH = 1080;
+
+    if (cropState.aspectRatio === 'original') {
+      const origAspect = cropState.imageObj.width / cropState.imageObj.height;
+      exportH = Math.round(exportW / origAspect);
+    } else {
+      exportH = Math.round(exportW / cropState.aspectRatio);
+    }
+
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = exportW;
+    exportCanvas.height = exportH;
+    const exportCtx = exportCanvas.getContext('2d');
+
+    const isSideways = cropState.rotation === 90 || cropState.rotation === 270;
+    const effW = isSideways ? cropState.imageObj.height : cropState.imageObj.width;
+    const effH = isSideways ? cropState.imageObj.width : cropState.imageObj.height;
+
+    const baseCoverScale = Math.max(exportW / effW, exportH / effH);
+    const drawScale = baseCoverScale * cropState.scale;
+
+    // Scale preview pan coordinates up to high-resolution export canvas
+    const coordRatio = exportW / cropCanvas.width;
+    const exportPanX = cropState.panX * coordRatio;
+    const exportPanY = cropState.panY * coordRatio;
+
+    exportCtx.save();
+    exportCtx.translate((exportW / 2) + exportPanX, (exportH / 2) + exportPanY);
+    exportCtx.rotate((cropState.rotation * Math.PI) / 180);
+    exportCtx.scale(drawScale, drawScale);
+    exportCtx.drawImage(cropState.imageObj, -cropState.imageObj.width / 2, -cropState.imageObj.height / 2);
+    exportCtx.restore();
+
+    const croppedDataUrl = exportCanvas.toDataURL('image/jpeg', 0.92);
+
+    currentSettings.bgImage = croppedDataUrl;
+    updateImageThumbnailUI();
+
+    // Broadcast immediately to ChatGPT tab and save to storage
+    saveSetting('bgImage', croppedDataUrl, () => {
+      closeCropModal();
+      showStatus('Wallpaper cropped and updated!', 'success');
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // Crop Modal Event Listeners
+  // --------------------------------------------------------------------------
+
+  btnCrop.addEventListener('click', openCropModal);
+  btnCloseCrop.addEventListener('click', closeCropModal);
+  btnCancelCrop.addEventListener('click', closeCropModal);
+  btnApplyCrop.addEventListener('click', applyCroppedImage);
+
+  // Mouse drag panning
+  cropViewport.addEventListener('mousedown', (e) => {
+    cropState.isDragging = true;
+    cropState.dragStartX = e.clientX;
+    cropState.dragStartY = e.clientY;
+    cropState.initialPanX = cropState.panX;
+    cropState.initialPanY = cropState.panY;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!cropState.isDragging) return;
+    const dx = e.clientX - cropState.dragStartX;
+    const dy = e.clientY - cropState.dragStartY;
+    cropState.panX = cropState.initialPanX + dx;
+    cropState.panY = cropState.initialPanY + dy;
+    renderCropPreview();
+  });
+
+  window.addEventListener('mouseup', () => {
+    cropState.isDragging = false;
+  });
+
+  // Touch drag panning for touchscreens
+  cropViewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      cropState.isDragging = true;
+      cropState.dragStartX = e.touches[0].clientX;
+      cropState.dragStartY = e.touches[0].clientY;
+      cropState.initialPanX = cropState.panX;
+      cropState.initialPanY = cropState.panY;
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (!cropState.isDragging || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - cropState.dragStartX;
+    const dy = e.touches[0].clientY - cropState.dragStartY;
+    cropState.panX = cropState.initialPanX + dx;
+    cropState.panY = cropState.initialPanY + dy;
+    renderCropPreview();
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    cropState.isDragging = false;
+  });
+
+  // Mouse wheel zoom
+  cropViewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomStep = e.deltaY < 0 ? 0.1 : -0.1;
+    let newScale = Math.max(1.0, Math.min(3.5, cropState.scale + zoomStep));
+    cropState.scale = Math.round(newScale * 100) / 100;
+    cropZoomSlider.value = cropState.scale.toString();
+    cropZoomVal.textContent = `${cropState.scale.toFixed(1)}x`;
+    renderCropPreview();
+  }, { passive: false });
+
+  // Zoom slider input
+  cropZoomSlider.addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    cropState.scale = val;
+    cropZoomVal.textContent = `${val.toFixed(1)}x`;
+    renderCropPreview();
+  });
+
+  // Rotation button
+  btnRotate.addEventListener('click', () => {
+    cropState.rotation = (cropState.rotation + 90) % 360;
+    renderCropPreview();
+  });
+
+  // Aspect ratio presets
+  aspectButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      aspectButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const aspectVal = btn.dataset.aspect;
+      if (aspectVal === '16/9') cropState.aspectRatio = 16 / 9;
+      else if (aspectVal === '16/10') cropState.aspectRatio = 16 / 10;
+      else if (aspectVal === '4/3') cropState.aspectRatio = 4 / 3;
+      else if (aspectVal === 'original') cropState.aspectRatio = 'original';
+
+      renderCropPreview();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Main Settings Event Listeners
   // --------------------------------------------------------------------------
 
   // Enabled Toggle
@@ -409,10 +665,15 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const dataUrl = await processUploadedImage(file);
       currentSettings.bgImage = dataUrl;
+      currentSettings.bgOriginalImage = dataUrl;
       updateImageThumbnailUI();
 
-      saveSetting('bgImage', dataUrl, () => {
-        showStatus('Background image uploaded!', 'success');
+      saveSettingsBatch({
+        bgImage: dataUrl,
+        bgOriginalImage: dataUrl
+      }, () => {
+        showStatus('Background uploaded! Opening crop tool...', 'success');
+        openCropModal();
       });
     } catch (err) {
       showStatus('Error processing image: ' + err.message, 'error');
@@ -422,13 +683,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Remove Background Image
   btnRemoveImage.addEventListener('click', () => {
     currentSettings.bgImage = null;
+    currentSettings.bgOriginalImage = null;
     updateImageThumbnailUI();
-    saveSetting('bgImage', null, () => {
+    saveSettingsBatch({
+      bgImage: null,
+      bgOriginalImage: null
+    }, () => {
       showStatus('Background image removed', 'success');
     });
   });
 
-  // Background Color Picker: live broadcast on input, debounced storage write
+  // Background Color Picker
   bgColorPicker.addEventListener('input', (e) => {
     const hex = e.target.value.toLowerCase();
     bgColorText.textContent = hex.toUpperCase();
@@ -439,7 +704,6 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSettings.themeId = matchingPreset ? matchingPreset.id : 'custom';
     updatePresetSelectionUI();
 
-    // LIVE INSTANT UPDATE TO CHATGPT TAB
     broadcastToChatGPTTabs(currentSettings);
 
     debounce('bgColor', () => {
@@ -452,7 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 60);
   });
 
-  // Accent Color Picker: live broadcast on input, debounced storage write
+  // Accent Color Picker
   accentColorPicker.addEventListener('input', (e) => {
     const hex = e.target.value.toLowerCase();
     accentColorText.textContent = hex.toUpperCase();
@@ -460,7 +724,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.style.setProperty('--border-focus', hex);
     currentSettings.accentColor = hex;
 
-    // LIVE INSTANT UPDATE TO CHATGPT TAB
     broadcastToChatGPTTabs(currentSettings);
 
     debounce('accentColor', () => {
@@ -470,13 +733,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 60);
   });
 
-  // Opacity Slider: LIVE INSTANT BROADCAST ON INPUT
+  // Opacity Slider
   sliderOpacity.addEventListener('input', (e) => {
     const val = parseInt(e.target.value, 10);
     labelOpacityVal.textContent = `${val}%`;
     currentSettings.bgOpacity = val;
 
-    // LIVE INSTANT UPDATE TO CHATGPT TAB
     broadcastToChatGPTTabs(currentSettings);
 
     debounce('bgOpacity', () => {
@@ -486,13 +748,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 60);
   });
 
-  // Blur Slider: LIVE INSTANT BROADCAST ON INPUT
+  // Blur Slider
   sliderBlur.addEventListener('input', (e) => {
     const val = parseInt(e.target.value, 10);
     labelBlurVal.textContent = `${val} px`;
     currentSettings.bgBlur = val;
 
-    // LIVE INSTANT UPDATE TO CHATGPT TAB
     broadcastToChatGPTTabs(currentSettings);
 
     debounce('bgBlur', () => {

@@ -599,3 +599,163 @@ body::-webkit-scrollbar-thumb:hover {
 .cgts-status-msg.error {
   color: var(--danger);
 }
+
+/* --------------------------------------------------------------------------
+   Crop & Reposition Modal
+   -------------------------------------------------------------------------- */
+.cgts-modal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(10, 12, 16, 0.94);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.cgts-modal-content {
+  width: 100%;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+}
+
+.cgts-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cgts-modal-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.cgts-modal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cgts-modal-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.cgts-icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+}
+
+.cgts-icon-btn:hover {
+  color: var(--text-primary);
+}
+
+.cgts-crop-viewport {
+  position: relative;
+  width: 100%;
+  height: 191px;
+  background-color: #000000;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+}
+
+.cgts-crop-viewport:active {
+  cursor: grabbing;
+}
+
+#crop-canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.cgts-crop-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.cgts-grid-line {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.cgts-grid-line.h1 { top: 33.33%; left: 0; right: 0; height: 1px; }
+.cgts-grid-line.h2 { top: 66.66%; left: 0; right: 0; height: 1px; }
+.cgts-grid-line.v1 { left: 33.33%; top: 0; bottom: 0; width: 1px; }
+.cgts-grid-line.v2 { left: 66.66%; top: 0; bottom: 0; width: 1px; }
+
+.cgts-drag-hint {
+  position: absolute;
+  bottom: 6px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(0, 0, 0, 0.65);
+  padding: 2px 8px;
+  border-radius: 10px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
+.cgts-crop-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cgts-aspect-group {
+  display: flex;
+  gap: 4px;
+}
+
+.cgts-pill-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.cgts-pill-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.cgts-pill-btn.active {
+  background-color: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.cgts-modal-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 4px;
+}

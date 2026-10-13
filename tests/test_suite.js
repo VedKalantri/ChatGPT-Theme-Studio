@@ -63,10 +63,12 @@ const html = fs.readFileSync(path.join(dir, 'popup.html'), 'utf8');
 const expectedIds = [
   'enabled-toggle', 'status-badge', 'themes-grid',
   'bg-thumb-container', 'bg-thumb-fill', 'bg-thumb-img', 'bg-thumb-placeholder',
-  'bg-file-input', 'btn-upload', 'btn-remove-image', 'bg-color-picker', 'bg-color-text',
+  'bg-file-input', 'btn-upload', 'btn-crop', 'btn-remove-image', 'bg-color-picker', 'bg-color-text',
   'slider-opacity', 'label-opacity-val', 'slider-blur', 'label-blur-val',
   'select-position', 'select-size', 'accent-color-picker', 'accent-color-text',
-  'btn-reset', 'status-message'
+  'btn-reset', 'status-message',
+  'crop-modal', 'btn-close-crop', 'btn-cancel-crop', 'btn-apply-crop',
+  'crop-canvas', 'crop-viewport', 'crop-zoom-slider', 'crop-zoom-val', 'btn-rotate'
 ];
 for (const id of expectedIds) {
   console.assert(html.includes(`id="${id}"`), `popup.html missing ID: ${id}`);

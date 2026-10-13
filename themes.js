@@ -81,6 +81,7 @@
     bgColor: '#16171d',
     accentColor: '#4d88ff',
     bgImage: null,
+    bgOriginalImage: null,
     bgOpacity: 85,
     bgBlur: 0,
     bgPosition: 'center',
@@ -144,6 +145,13 @@
         result.bgImage = src.bgImage;
       } else {
         result.bgImage = null;
+      }
+
+      // Original Background Image (data URL or null for re-cropping)
+      if (typeof src.bgOriginalImage === 'string' && src.bgOriginalImage.startsWith('data:image/')) {
+        result.bgOriginalImage = src.bgOriginalImage;
+      } else {
+        result.bgOriginalImage = null;
       }
 
       // Opacity: 10 - 100
