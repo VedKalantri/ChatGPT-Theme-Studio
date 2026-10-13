@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "ChatGPT Theme Studio",
+  "version": "1.0.0",
+  "description": "Customize your ChatGPT interface with custom background wallpapers, opacity, blur, accent colors, and refined themes.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "ChatGPT Theme Studio"
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "js": [
+        "themes.js",
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

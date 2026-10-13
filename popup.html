@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT Theme Studio</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="cgts-popup">
+    <!-- Header -->
+    <header class="cgts-header">
+      <div class="cgts-brand">
+        <svg class="cgts-logo" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" rx="5" fill="#1e222d" stroke="#374151" stroke-width="1.5" />
+          <rect x="6" y="6" width="9" height="9" rx="2" fill="#a855f7" fill-opacity="0.8" />
+          <rect x="9" y="9" width="9" height="9" rx="2" fill="#38bdf8" fill-opacity="0.8" />
+          <rect x="12" y="12" width="8" height="8" rx="2" fill="#4d88ff" stroke="#ffffff" stroke-width="0.75" />
+        </svg>
+        <div class="cgts-title-group">
+          <h1 class="cgts-title">Theme Studio</h1>
+          <span class="cgts-subtitle">ChatGPT Customizer</span>
+        </div>
+      </div>
+      <div class="cgts-toggle-wrapper">
+        <label class="cgts-switch" for="enabled-toggle" title="Toggle theme customization">
+          <input type="checkbox" id="enabled-toggle" checked>
+          <span class="cgts-switch-slider"></span>
+        </label>
+        <span id="status-badge" class="cgts-badge active">Active</span>
+      </div>
+    </header>
+
+    <main class="cgts-main">
+      <!-- Section 1: Themes -->
+      <section class="cgts-section" aria-labelledby="heading-themes">
+        <div class="cgts-section-header">
+          <h2 id="heading-themes" class="cgts-section-title">Presets</h2>
+          <span class="cgts-section-hint">Select a curated theme</span>
+        </div>
+        <div class="cgts-themes-grid" id="themes-grid" role="radiogroup" aria-label="Curated preset themes">
+          <!-- Populated dynamically via themes.js -->
+        </div>
+      </section>
+
+      <!-- Section 2: Background -->
+      <section class="cgts-section" aria-labelledby="heading-bg">
+        <div class="cgts-section-header">
+          <h2 id="heading-bg" class="cgts-section-title">Background</h2>
+          <span class="cgts-section-hint">Image or solid color</span>
+        </div>
+
+        <!-- Thumbnail & Upload Controls -->
+        <div class="cgts-bg-preview-card">
+          <div class="cgts-thumb-container" id="bg-thumb-container">
+            <div class="cgts-thumb-fill" id="bg-thumb-fill"></div>
+            <img class="cgts-thumb-img hidden" id="bg-thumb-img" alt="Background preview" />
+            <div class="cgts-thumb-placeholder" id="bg-thumb-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
+              <span>No image uploaded</span>
+            </div>
+          </div>
+
+          <div class="cgts-bg-upload-actions">
+            <input type="file" id="bg-file-input" accept="image/jpeg,image/png,image/webp" class="visually-hidden" />
+            <button type="button" id="btn-upload" class="cgts-btn cgts-btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+              </svg>
+              Upload Image
+            </button>
+            <button type="button" id="btn-remove-image" class="cgts-btn cgts-btn-danger hidden" title="Remove custom image">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Remove
+            </button>
+            <span class="cgts-upload-note">Max 5MB (JPG, PNG, WebP)</span>
+          </div>
+        </div>
+
+        <!-- Solid Background Color Row -->
+        <div class="cgts-control-row">
+          <label for="bg-color-picker" class="cgts-label">Base Color</label>
+          <div class="cgts-color-field">
+            <input type="color" id="bg-color-picker" class="cgts-color-input" value="#16171d" />
+            <span id="bg-color-text" class="cgts-color-value">#16171D</span>
+          </div>
+        </div>
+
+        <!-- Image Specific Controls Container -->
+        <div id="image-controls-container" class="cgts-image-settings">
+          <!-- Opacity Slider -->
+          <div class="cgts-control-row">
+            <div class="cgts-label-group">
+              <label for="slider-opacity" class="cgts-label">Image Opacity</label>
+              <span id="label-opacity-val" class="cgts-val-display">85%</span>
+            </div>
+            <input type="range" id="slider-opacity" min="10" max="100" step="1" value="85" class="cgts-range" />
+          </div>
+
+          <!-- Blur Slider -->
+          <div class="cgts-control-row">
+            <div class="cgts-label-group">
+              <label for="slider-blur" class="cgts-label">Image Blur</label>
+              <span id="label-blur-val" class="cgts-val-display">0 px</span>
+            </div>
+            <input type="range" id="slider-blur" min="0" max="12" step="1" value="0" class="cgts-range" />
+          </div>
+
+          <!-- Position and Size Grid -->
+          <div class="cgts-control-split">
+            <div class="cgts-control-col">
+              <label for="select-position" class="cgts-label">Position</label>
+              <select id="select-position" class="cgts-select">
+                <option value="center">Center</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+              </select>
+            </div>
+            <div class="cgts-control-col">
+              <label for="select-size" class="cgts-label">Size</label>
+              <select id="select-size" class="cgts-select">
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Accent Color -->
+      <section class="cgts-section" aria-labelledby="heading-accent">
+        <div class="cgts-section-header">
+          <h2 id="heading-accent" class="cgts-section-title">Accent Color</h2>
+          <span class="cgts-section-hint">Buttons & active indicators</span>
+        </div>
+        <div class="cgts-control-row">
+          <label for="accent-color-picker" class="cgts-label">Highlight</label>
+          <div class="cgts-color-field">
+            <input type="color" id="accent-color-picker" class="cgts-color-input" value="#4d88ff" />
+            <span id="accent-color-text" class="cgts-color-value">#4D88FF</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="cgts-footer">
+      <button type="button" id="btn-reset" class="cgts-btn cgts-btn-secondary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+        </svg>
+        Reset to Default
+      </button>
+      <div id="status-message" class="cgts-status-msg" role="status" aria-live="polite"></div>
+    </footer>
+  </div>
+
+  <script src="themes.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

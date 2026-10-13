@@ -1,0 +1,233 @@
+/* ==========================================================================
+   ChatGPT Theme Studio - Content Script Stylesheet
+   Precision-scoped to ChatGPT's conversation interface (<main>).
+   Guarantees perfect alignment, native sidebar integrity, and readability.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Extension-Managed Background Layer
+   Mounted inside ChatGPT's <main> container.
+   Absolute positioning, zero-pointer-events, perfectly aligned with chat.
+   -------------------------------------------------------------------------- */
+#cgts-background-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  user-select: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+#cgts-background-layer .cgts-backdrop-color {
+  position: absolute !important;
+  inset: 0 !important;
+  background-color: var(--cgts-bg-color, #16171d) !important;
+  transition: background-color 0.15s ease !important;
+  pointer-events: none !important;
+}
+
+#cgts-background-layer .cgts-backdrop-image {
+  position: absolute !important;
+  top: -12px !important;
+  left: -12px !important;
+  right: -12px !important;
+  bottom: -12px !important;
+  background-image: var(--cgts-bg-image, none) !important;
+  background-position: var(--cgts-bg-position, center center) !important;
+  background-size: var(--cgts-bg-size, cover) !important;
+  background-repeat: no-repeat !important;
+  opacity: var(--cgts-bg-opacity, 0.85) !important;
+  filter: blur(var(--cgts-bg-blur, 0px)) !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease, filter 0.15s ease !important;
+}
+
+#cgts-background-layer .cgts-backdrop-scrim {
+  position: absolute !important;
+  inset: 0 !important;
+  background: var(--cgts-scrim-gradient, none) !important;
+  pointer-events: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Main Conversation View Surface Handling
+   Transparentize inner viewport containers so the wallpaper layer shows.
+   Leave sidebar (nav) completely untouched!
+   -------------------------------------------------------------------------- */
+html.cgts-active main {
+  position: relative !important;
+  background-color: transparent !important;
+}
+
+/* Ensure direct children of main stack above the background layer */
+html.cgts-active main > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Main chat scroll container and token surface transparentizing */
+html.cgts-active main div[role="presentation"],
+html.cgts-active main div[class*="react-scroll-to-bottom"],
+html.cgts-active main div[class*="bg-token-main-surface-primary"],
+html.cgts-active main div[class*="overflow-y-auto"] {
+  background-color: transparent !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Eliminate Bottom Black Cut-Off Bar & Style Composer
+   Removes OpenAI's dark bottom fade so the wallpaper extends seamlessly.
+   -------------------------------------------------------------------------- */
+html.cgts-active main div[class*="bg-gradient-to-t"],
+html.cgts-active main div[class*="from-token-main-surface-primary"],
+html.cgts-active main div[class*="from-black"],
+html.cgts-active main div[class*="from-[#212121]"],
+html.cgts-active main div[class*="from-"],
+html.cgts-active main div.composer-parent,
+html.cgts-active main div:has(> form),
+html.cgts-active main div:has(> [data-testid="composer-speech-button"]),
+html.cgts-active main div:has(> [class*="text-xs text-token-text-secondary"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Prompt Composer Input Pill */
+html.cgts-active main form,
+html.cgts-active main [data-testid="composer-parent"] form,
+html.cgts-active main div:has(> #prompt-textarea) {
+  background-color: rgba(28, 30, 38, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 26px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.cgts-active[data-cgts-mode="light"] main form,
+html.cgts-active[data-cgts-mode="light"] main div:has(> #prompt-textarea) {
+  background-color: rgba(255, 255, 255, 0.90) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Textarea focus indicator */
+html.cgts-active #prompt-textarea:focus {
+  outline: none !important;
+}
+html.cgts-active form:has(#prompt-textarea:focus),
+html.cgts-active div:has(> #prompt-textarea:focus) {
+  border-color: var(--cgts-accent-color) !important;
+  box-shadow: 0 0 0 1px var(--cgts-accent-color), 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Top Sticky Header Bar in Main */
+html.cgts-active main header,
+html.cgts-active main div[class*="sticky top-0"] {
+  background-color: rgba(18, 20, 26, 0.72) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+html.cgts-active[data-cgts-mode="light"] main header,
+html.cgts-active[data-cgts-mode="light"] main div[class*="sticky top-0"] {
+  background-color: rgba(246, 246, 248, 0.82) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Chat Message Readability (Frosted Glass Cards)
+   Prevents text from clashing with background illustrations/wallpapers.
+   -------------------------------------------------------------------------- */
+/* Assistant and User message turns */
+html.cgts-active main article[data-testid^="conversation-turn"] {
+  background-color: rgba(20, 22, 28, 0.75) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+  padding: 16px 22px !important;
+  margin-top: 10px !important;
+  margin-bottom: 10px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22) !important;
+  color: #f3f4f6 !important;
+}
+
+/* User turn distinct bubble */
+html.cgts-active main article[data-testid^="conversation-turn"]:has([data-message-author-role="user"]) {
+  background-color: rgba(30, 34, 46, 0.84) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Light mode message cards */
+html.cgts-active[data-cgts-mode="light"] main article[data-testid^="conversation-turn"] {
+  background-color: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: #111827 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+html.cgts-active[data-cgts-mode="light"] main article[data-testid^="conversation-turn"]:has([data-message-author-role="user"]) {
+  background-color: rgba(240, 243, 248, 0.92) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Protected Components (Code Blocks, Menus, Dialogs)
+   Must always stay completely opaque and readable.
+   -------------------------------------------------------------------------- */
+/* Code blocks */
+html.cgts-active pre,
+html.cgts-active pre code,
+html.cgts-active div[class*="code-block"] {
+  background-color: #14151a !important;
+  border-radius: 8px !important;
+}
+
+/* Dropdown menus, tooltips, dialogs, and popovers */
+html.cgts-active [role="menu"],
+html.cgts-active [role="dialog"],
+html.cgts-active [role="tooltip"],
+html.cgts-active [data-radix-popper-content-wrapper] [role="menu"],
+html.cgts-active [data-radix-popper-content-wrapper] > div,
+html.cgts-active div[class*="popover"],
+html.cgts-active div[class*="dropdown-menu"] {
+  background-color: #1e2029 !important;
+  color: #f3f4f6 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+html.cgts-active[data-cgts-mode="light"] [role="menu"],
+html.cgts-active[data-cgts-mode="light"] [role="dialog"],
+html.cgts-active[data-cgts-mode="light"] [role="tooltip"],
+html.cgts-active[data-cgts-mode="light"] [data-radix-popper-content-wrapper] > div {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. Accent Color
+   -------------------------------------------------------------------------- */
+html.cgts-active button[data-testid="send-button"],
+html.cgts-active button[aria-label="Send prompt"] {
+  background-color: var(--cgts-accent-color) !important;
+  color: #ffffff !important;
+}
+
+html.cgts-active button.btn-primary {
+  background-color: var(--cgts-accent-color) !important;
+  border-color: var(--cgts-accent-color) !important;
+}
+
+html.cgts-active ::selection {
+  background-color: var(--cgts-accent-color) !important;
+  color: #ffffff !important;
+}
