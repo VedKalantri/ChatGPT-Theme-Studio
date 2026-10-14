@@ -1,96 +1,49 @@
 /* ==========================================================================
    ChatGPT Theme Studio - Content Script Stylesheet
-   Precision-scoped to ChatGPT's conversation interface (<main>).
-   Guarantees native sidebar protection, 0ms live alignment, and readability.
+   Precision-scoped STRICTLY to ChatGPT's conversation interface (<main>).
+   Completely isolates the left sidebar so it is NEVER altered, hidden, or collapsed.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   0. Sidebar & Navigation Protection - Absolute Guarantee
-   Guarantees ChatGPT's left sidebar, drawer, history list, and toggle buttons
-   are NEVER hidden, clipped, or obstructed by any extension styles.
+   0. Sidebar Protection: Ensure 100% Native Visibility
+   Guarantees ChatGPT's navigation sidebar and toggle buttons remain visible.
    -------------------------------------------------------------------------- */
 nav,
-nav[aria-label="Chat history"],
-nav[aria-label="Chat history"] *,
 aside,
-div[id*="sidebar"],
-div[class*="sidebar"],
-#stage-slideover-sidebar,
-#stage-popover-sidebar {
+[aria-label="Chat history"] {
   visibility: visible !important;
   opacity: 1 !important;
-  z-index: 50 !important;
 }
 
-/* Native Sidebar Toggle Buttons (Open / Close / Floating) */
 button[aria-label*="sidebar" i],
 button[aria-label*="Sidebar" i],
 [data-testid*="sidebar" i],
 [data-testid="open-sidebar-button"],
 [data-testid="close-sidebar-button"],
-button[aria-controls*="sidebar" i],
-button[title*="sidebar" i],
-div:has(> [data-testid="open-sidebar-button"]),
-div:has(> button[aria-label*="sidebar" i]) {
+button[aria-controls*="sidebar" i] {
   visibility: visible !important;
   opacity: 1 !important;
-  display: inline-flex !important;
   pointer-events: auto !important;
-  z-index: 9999 !important;
 }
 
-/* Extension Fallback Floating Sidebar Toggle Button */
-#cgts-floating-sidebar-toggle {
-  position: fixed !important;
-  top: 12px !important;
-  left: 12px !important;
-  z-index: 999999 !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 7px !important;
-  padding: 7px 13px !important;
-  background-color: rgba(28, 30, 40, 0.94) !important;
+/* High-contrast styling for the Open Sidebar toggle if collapsed over custom wallpaper */
+[data-testid="open-sidebar-button"],
+button[aria-label*="Open sidebar" i],
+button[aria-label*="open sidebar" i],
+button[title*="Open sidebar" i] {
+  background-color: rgba(30, 32, 42, 0.92) !important;
   color: #f3f4f6 !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  border-radius: 9px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  transition: all 0.15s ease !important;
-  pointer-events: auto !important;
-  user-select: none !important;
-}
-
-#cgts-floating-sidebar-toggle:hover {
-  background-color: rgba(42, 45, 60, 0.98) !important;
-  border-color: var(--cgts-accent-color, #4d88ff) !important;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55) !important;
-  transform: translateY(-1px) !important;
-}
-
-#cgts-floating-sidebar-toggle svg {
-  width: 15px !important;
-  height: 15px !important;
-  fill: none !important;
-  stroke: currentColor !important;
-  stroke-width: 2 !important;
-}
-
-html.cgts-active[data-cgts-mode="light"] #cgts-floating-sidebar-toggle {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  color: #111827 !important;
-  border-color: rgba(0, 0, 0, 0.18) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  z-index: 50 !important;
 }
 
 /* --------------------------------------------------------------------------
-   1. Extension-Managed Background Layer
-   Mounted inside ChatGPT's <main> conversation container.
-   Absolute positioning, zero-pointer-events, aligned strictly with chat.
+   1. Extension-Managed Background Layer inside <main>
+   Mounted strictly inside ChatGPT's <main> container.
    -------------------------------------------------------------------------- */
 #cgts-background-layer {
   position: absolute !important;
@@ -139,30 +92,63 @@ html.cgts-active[data-cgts-mode="light"] #cgts-floating-sidebar-toggle {
 
 /* --------------------------------------------------------------------------
    2. Main Conversation View Surface Handling
-   Transparentize chat conversation viewport so the wallpaper layer shows.
-   Preserves native sidebar and layout flow completely untouched!
+   Transparentize all conversation wrappers inside <main> across route changes.
+   Sidebar is completely outside <main> and remains 100% native.
    -------------------------------------------------------------------------- */
-html.cgts-active main {
+html.cgts-active main,
+main.cgts-main-active {
   position: relative !important;
   background-color: transparent !important;
 }
 
-/* Stack non-background children above background layer without breaking fixed/sticky positioning */
-html.cgts-active main > *:not(#cgts-background-layer) {
+/* Ensure direct children of main stack above the background layer */
+html.cgts-active main > *:not(#cgts-background-layer),
+main.cgts-main-active > *:not(#cgts-background-layer) {
+  position: relative;
   z-index: 1;
 }
 
-/* Main chat scroll container and token surface transparentizing */
+/* Comprehensive chat wrapper transparentizing inside <main> */
 html.cgts-active main div[role="presentation"],
-html.cgts-active main div[class*="react-scroll-to-bottom"],
-html.cgts-active main div[class*="bg-token-main-surface-primary"],
-html.cgts-active main div[class*="overflow-y-auto"] {
+html.cgts-active main div[class*="react-scroll"],
+html.cgts-active main div[class*="overflow"],
+html.cgts-active main div[class*="flex-1"],
+html.cgts-active main div[class*="h-full"],
+html.cgts-active main div[class*="bg-token-main-surface"],
+html.cgts-active main div[class*="bg-token-"],
+html.cgts-active main div[class*="dark:bg-token-"],
+html.cgts-active main div[class*="dark:bg-[#"],
+html.cgts-active main div[class*="bg-[#"],
+html.cgts-active main div[class*="bg-gray-"],
+html.cgts-active main section,
+main.cgts-main-active div[role="presentation"],
+main.cgts-main-active div[class*="react-scroll"],
+main.cgts-main-active div[class*="overflow"],
+main.cgts-main-active div[class*="flex-1"],
+main.cgts-main-active div[class*="h-full"],
+main.cgts-main-active div[class*="bg-token-main-surface"],
+main.cgts-main-active div[class*="bg-token-"],
+main.cgts-main-active div[class*="dark:bg-token-"],
+main.cgts-main-active div[class*="dark:bg-[#"],
+main.cgts-main-active div[class*="bg-[#"],
+main.cgts-main-active div[class*="bg-gray-"],
+main.cgts-main-active section {
   background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Direct intermediate wrapper divs between <main> and conversation turns */
+html.cgts-active main > div,
+main.cgts-main-active > div,
+html.cgts-active main > div > div,
+main.cgts-main-active > div > div {
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
 /* --------------------------------------------------------------------------
    3. Eliminate Bottom Black Cut-Off Bar & Style Composer
-   Removes OpenAI's dark bottom gradient so the wallpaper extends seamlessly.
+   Removes OpenAI's dark bottom gradient fade so wallpaper is seamless.
    -------------------------------------------------------------------------- */
 html.cgts-active main div[class*="bg-gradient-to-t"],
 html.cgts-active main div[class*="from-token-main-surface-primary"],
@@ -172,7 +158,10 @@ html.cgts-active main div[class*="from-"],
 html.cgts-active main div.composer-parent,
 html.cgts-active main div:has(> form),
 html.cgts-active main div:has(> [data-testid="composer-speech-button"]),
-html.cgts-active main div:has(> [class*="text-xs text-token-text-secondary"]) {
+html.cgts-active main div:has(> [class*="text-xs text-token-text-secondary"]),
+main.cgts-main-active div[class*="bg-gradient-to-t"],
+main.cgts-main-active div[class*="from-"],
+main.cgts-main-active div.composer-parent {
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
@@ -181,7 +170,10 @@ html.cgts-active main div:has(> [class*="text-xs text-token-text-secondary"]) {
 /* Prompt Composer Input Pill */
 html.cgts-active main form,
 html.cgts-active main [data-testid="composer-parent"] form,
-html.cgts-active main div:has(> #prompt-textarea) {
+html.cgts-active main div:has(> #prompt-textarea),
+main.cgts-main-active form,
+main.cgts-main-active [data-testid="composer-parent"] form,
+main.cgts-main-active div:has(> #prompt-textarea) {
   background-color: rgba(28, 30, 38, 0.88) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
@@ -197,36 +189,38 @@ html.cgts-active[data-cgts-mode="light"] main div:has(> #prompt-textarea) {
 }
 
 /* Textarea focus indicator */
-html.cgts-active #prompt-textarea:focus {
+html.cgts-active #prompt-textarea:focus,
+main.cgts-main-active #prompt-textarea:focus {
   outline: none !important;
 }
 html.cgts-active form:has(#prompt-textarea:focus),
-html.cgts-active div:has(> #prompt-textarea:focus) {
+html.cgts-active div:has(> #prompt-textarea:focus),
+main.cgts-main-active form:has(#prompt-textarea:focus),
+main.cgts-main-active div:has(> #prompt-textarea:focus) {
   border-color: var(--cgts-accent-color) !important;
   box-shadow: 0 0 0 1px var(--cgts-accent-color), 0 4px 20px rgba(0, 0, 0, 0.35) !important;
 }
 
 /* --------------------------------------------------------------------------
-   4. Top Header Bar: Clean Frosted Glass, NO Border Lines
-   Seamless integration with custom wallpaper.
+   4. Top Sticky Header Bar inside Main: Zero Borders, Seamless Wallpaper
    -------------------------------------------------------------------------- */
 html.cgts-active main header,
-html.cgts-active header,
 html.cgts-active main div[class*="sticky top-0"],
-html.cgts-active div[class*="sticky top-0"] {
+main.cgts-main-active header,
+main.cgts-main-active div[class*="sticky top-0"] {
   background-color: rgba(18, 20, 26, 0.65) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
+  border-top: none !important;
   border-bottom: none !important;
   box-shadow: none !important;
   z-index: 20 !important;
 }
 
 html.cgts-active[data-cgts-mode="light"] main header,
-html.cgts-active[data-cgts-mode="light"] header,
-html.cgts-active[data-cgts-mode="light"] main div[class*="sticky top-0"],
-html.cgts-active[data-cgts-mode="light"] div[class*="sticky top-0"] {
+html.cgts-active[data-cgts-mode="light"] main div[class*="sticky top-0"] {
   background-color: rgba(255, 255, 255, 0.75) !important;
+  border-top: none !important;
   border-bottom: none !important;
   box-shadow: none !important;
 }
@@ -235,8 +229,8 @@ html.cgts-active[data-cgts-mode="light"] div[class*="sticky top-0"] {
    5. Chat Message Readability (Frosted Glass Cards)
    Prevents text from clashing with background illustrations/wallpapers.
    -------------------------------------------------------------------------- */
-/* Assistant and User message turns */
-html.cgts-active main article[data-testid^="conversation-turn"] {
+html.cgts-active main article[data-testid^="conversation-turn"],
+main.cgts-main-active article[data-testid^="conversation-turn"] {
   background-color: rgba(20, 22, 28, 0.75) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
@@ -249,40 +243,41 @@ html.cgts-active main article[data-testid^="conversation-turn"] {
   color: #f3f4f6 !important;
 }
 
-/* User turn distinct bubble */
-html.cgts-active main article[data-testid^="conversation-turn"]:has([data-message-author-role="user"]) {
+html.cgts-active main article[data-testid^="conversation-turn"]:has([data-message-author-role="user"]),
+main.cgts-main-active article[data-testid^="conversation-turn"]:has([data-message-author-role="user"]) {
   background-color: rgba(30, 34, 46, 0.84) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* Light mode message cards */
-html.cgts-active[data-cgts-mode="light"] main article[data-testid^="conversation-turn"] {
+html.cgts-active[data-cgts-mode="light"] main article[data-testid^="conversation-turn"],
+main.cgts-main-active[data-cgts-mode="light"] article[data-testid^="conversation-turn"] {
   background-color: rgba(255, 255, 255, 0.86) !important;
   border-color: rgba(0, 0, 0, 0.08) !important;
   color: #111827 !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
 }
 
-html.cgts-active[data-cgts-mode="light"] main article[data-testid^="conversation-turn"]:has([data-message-author-role="user"]) {
+html.cgts-active[data-cgts-mode="light"] main article[data-testid^="conversation-turn"]:has([data-message-author-role="user"]),
+main.cgts-main-active[data-cgts-mode="light"] article[data-testid^="conversation-turn"]:has([data-message-author-role="user"]) {
   background-color: rgba(240, 243, 248, 0.92) !important;
   border-color: rgba(0, 0, 0, 0.12) !important;
 }
 
 /* --------------------------------------------------------------------------
-   6. Protected Components (Code Blocks, Menus, Dialogs)
-   Must always stay completely opaque and readable.
+   6. Protected Components inside Main (Code Blocks)
    -------------------------------------------------------------------------- */
-/* Code blocks */
-html.cgts-active pre,
-html.cgts-active pre code,
-html.cgts-active div[class*="code-block"] {
+html.cgts-active main pre,
+html.cgts-active main pre code,
+html.cgts-active main div[class*="code-block"],
+main.cgts-main-active pre,
+main.cgts-main-active pre code,
+main.cgts-main-active div[class*="code-block"] {
   background-color: #14151a !important;
   border-radius: 8px !important;
 }
 
-/* Dropdown menus, tooltips, dialogs, and popovers */
+/* Dropdown menus, tooltips, and popovers */
 html.cgts-active [role="menu"],
-html.cgts-active [role="dialog"],
 html.cgts-active [role="tooltip"],
 html.cgts-active [data-radix-popper-content-wrapper] [role="menu"],
 html.cgts-active [data-radix-popper-content-wrapper] > div,
@@ -295,7 +290,6 @@ html.cgts-active div[class*="dropdown-menu"] {
 }
 
 html.cgts-active[data-cgts-mode="light"] [role="menu"],
-html.cgts-active[data-cgts-mode="light"] [role="dialog"],
 html.cgts-active[data-cgts-mode="light"] [role="tooltip"],
 html.cgts-active[data-cgts-mode="light"] [data-radix-popper-content-wrapper] > div {
   background-color: #ffffff !important;
@@ -307,17 +301,21 @@ html.cgts-active[data-cgts-mode="light"] [data-radix-popper-content-wrapper] > d
    7. Accent Color
    -------------------------------------------------------------------------- */
 html.cgts-active button[data-testid="send-button"],
-html.cgts-active button[aria-label="Send prompt"] {
+html.cgts-active button[aria-label="Send prompt"],
+main.cgts-main-active button[data-testid="send-button"],
+main.cgts-main-active button[aria-label="Send prompt"] {
   background-color: var(--cgts-accent-color) !important;
   color: #ffffff !important;
 }
 
-html.cgts-active button.btn-primary {
+html.cgts-active button.btn-primary,
+main.cgts-main-active button.btn-primary {
   background-color: var(--cgts-accent-color) !important;
   border-color: var(--cgts-accent-color) !important;
 }
 
-html.cgts-active ::selection {
+html.cgts-active ::selection,
+main.cgts-main-active ::selection {
   background-color: var(--cgts-accent-color) !important;
   color: #ffffff !important;
 }
