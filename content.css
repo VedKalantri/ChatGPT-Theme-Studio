@@ -1,13 +1,96 @@
 /* ==========================================================================
    ChatGPT Theme Studio - Content Script Stylesheet
    Precision-scoped to ChatGPT's conversation interface (<main>).
-   Guarantees perfect alignment, native sidebar integrity, and readability.
+   Guarantees native sidebar protection, 0ms live alignment, and readability.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
+   0. Sidebar & Navigation Protection - Absolute Guarantee
+   Guarantees ChatGPT's left sidebar, drawer, history list, and toggle buttons
+   are NEVER hidden, clipped, or obstructed by any extension styles.
+   -------------------------------------------------------------------------- */
+nav,
+nav[aria-label="Chat history"],
+nav[aria-label="Chat history"] *,
+aside,
+div[id*="sidebar"],
+div[class*="sidebar"],
+#stage-slideover-sidebar,
+#stage-popover-sidebar {
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 50 !important;
+}
+
+/* Native Sidebar Toggle Buttons (Open / Close / Floating) */
+button[aria-label*="sidebar" i],
+button[aria-label*="Sidebar" i],
+[data-testid*="sidebar" i],
+[data-testid="open-sidebar-button"],
+[data-testid="close-sidebar-button"],
+button[aria-controls*="sidebar" i],
+button[title*="sidebar" i],
+div:has(> [data-testid="open-sidebar-button"]),
+div:has(> button[aria-label*="sidebar" i]) {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-flex !important;
+  pointer-events: auto !important;
+  z-index: 9999 !important;
+}
+
+/* Extension Fallback Floating Sidebar Toggle Button */
+#cgts-floating-sidebar-toggle {
+  position: fixed !important;
+  top: 12px !important;
+  left: 12px !important;
+  z-index: 999999 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 7px 13px !important;
+  background-color: rgba(28, 30, 40, 0.94) !important;
+  color: #f3f4f6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 9px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  transition: all 0.15s ease !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+}
+
+#cgts-floating-sidebar-toggle:hover {
+  background-color: rgba(42, 45, 60, 0.98) !important;
+  border-color: var(--cgts-accent-color, #4d88ff) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55) !important;
+  transform: translateY(-1px) !important;
+}
+
+#cgts-floating-sidebar-toggle svg {
+  width: 15px !important;
+  height: 15px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+}
+
+html.cgts-active[data-cgts-mode="light"] #cgts-floating-sidebar-toggle {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  color: #111827 !important;
+  border-color: rgba(0, 0, 0, 0.18) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* --------------------------------------------------------------------------
    1. Extension-Managed Background Layer
-   Mounted inside ChatGPT's <main> container.
-   Absolute positioning, zero-pointer-events, perfectly aligned with chat.
+   Mounted inside ChatGPT's <main> conversation container.
+   Absolute positioning, zero-pointer-events, aligned strictly with chat.
    -------------------------------------------------------------------------- */
 #cgts-background-layer {
   position: absolute !important;
@@ -56,17 +139,16 @@
 
 /* --------------------------------------------------------------------------
    2. Main Conversation View Surface Handling
-   Transparentize inner viewport containers so the wallpaper layer shows.
-   Leave sidebar (nav) completely untouched!
+   Transparentize chat conversation viewport so the wallpaper layer shows.
+   Preserves native sidebar and layout flow completely untouched!
    -------------------------------------------------------------------------- */
 html.cgts-active main {
   position: relative !important;
   background-color: transparent !important;
 }
 
-/* Ensure direct children of main stack above the background layer */
-html.cgts-active main > * {
-  position: relative;
+/* Stack non-background children above background layer without breaking fixed/sticky positioning */
+html.cgts-active main > *:not(#cgts-background-layer) {
   z-index: 1;
 }
 
@@ -80,7 +162,7 @@ html.cgts-active main div[class*="overflow-y-auto"] {
 
 /* --------------------------------------------------------------------------
    3. Eliminate Bottom Black Cut-Off Bar & Style Composer
-   Removes OpenAI's dark bottom fade so the wallpaper extends seamlessly.
+   Removes OpenAI's dark bottom gradient so the wallpaper extends seamlessly.
    -------------------------------------------------------------------------- */
 html.cgts-active main div[class*="bg-gradient-to-t"],
 html.cgts-active main div[class*="from-token-main-surface-primary"],
@@ -124,25 +206,33 @@ html.cgts-active div:has(> #prompt-textarea:focus) {
   box-shadow: 0 0 0 1px var(--cgts-accent-color), 0 4px 20px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Top Sticky Header Bar in Main */
+/* --------------------------------------------------------------------------
+   4. Top Header Bar: Clean Frosted Glass, NO Border Lines
+   Seamless integration with custom wallpaper.
+   -------------------------------------------------------------------------- */
 html.cgts-active main header,
-html.cgts-active main div[class*="sticky top-0"] {
-  background-color: rgba(18, 20, 26, 0.72) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  position: relative !important;
-  z-index: 2 !important;
+html.cgts-active header,
+html.cgts-active main div[class*="sticky top-0"],
+html.cgts-active div[class*="sticky top-0"] {
+  background-color: rgba(18, 20, 26, 0.65) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  z-index: 20 !important;
 }
 
 html.cgts-active[data-cgts-mode="light"] main header,
-html.cgts-active[data-cgts-mode="light"] main div[class*="sticky top-0"] {
-  background-color: rgba(246, 246, 248, 0.82) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+html.cgts-active[data-cgts-mode="light"] header,
+html.cgts-active[data-cgts-mode="light"] main div[class*="sticky top-0"],
+html.cgts-active[data-cgts-mode="light"] div[class*="sticky top-0"] {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 /* --------------------------------------------------------------------------
-   4. Chat Message Readability (Frosted Glass Cards)
+   5. Chat Message Readability (Frosted Glass Cards)
    Prevents text from clashing with background illustrations/wallpapers.
    -------------------------------------------------------------------------- */
 /* Assistant and User message turns */
@@ -179,7 +269,7 @@ html.cgts-active[data-cgts-mode="light"] main article[data-testid^="conversation
 }
 
 /* --------------------------------------------------------------------------
-   5. Protected Components (Code Blocks, Menus, Dialogs)
+   6. Protected Components (Code Blocks, Menus, Dialogs)
    Must always stay completely opaque and readable.
    -------------------------------------------------------------------------- */
 /* Code blocks */
@@ -214,7 +304,7 @@ html.cgts-active[data-cgts-mode="light"] [data-radix-popper-content-wrapper] > d
 }
 
 /* --------------------------------------------------------------------------
-   6. Accent Color
+   7. Accent Color
    -------------------------------------------------------------------------- */
 html.cgts-active button[data-testid="send-button"],
 html.cgts-active button[aria-label="Send prompt"] {

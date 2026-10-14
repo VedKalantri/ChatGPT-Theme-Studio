@@ -1,6 +1,7 @@
 /**
  * ChatGPT Theme Studio - Content Script
- * Injected into chatgpt.com to manage the background layer and apply custom styling in real-time.
+ * Injected into chatgpt.com to manage the background layer, ensure native sidebar integrity,
+ * and apply custom styling in real-time.
  */
 
 (function () {
@@ -14,8 +15,10 @@
   let currentSettings = null;
   let observer = null;
   let isReattaching = false;
+  let hasAttemptedInitialSidebarRestore = false;
 
   const BG_LAYER_ID = 'cgts-background-layer';
+  const FLOATING_TOGGLE_ID = 'cgts-floating-sidebar-toggle';
 
   /**
    * Find ChatGPT's main chat container landmark.
@@ -25,6 +28,122 @@
    */
   function getMainContainer() {
     return document.querySelector('main');
+  }
+
+  /**
+   * Determine whether ChatGPT's left navigation sidebar is currently open/expanded.
+   * @returns {boolean}
+   */
+  function isSidebarOpen() {
+    const nav = document.querySelector('nav[aria-label="Chat history"], nav, aside, #stage-slideover-sidebar');
+    if (!nav) return false;
+
+    try {
+      const style = window.getComputedStyle(nav);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+        return false;
+      }
+      return nav.offsetWidth > 60;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Dispatch ChatGPT's native keyboard shortcut (Ctrl+Shift+S or Cmd+Shift+S)
+   * to toggle the sidebar.
+   */
+  function triggerSidebarShortcut() {
+    const isMac = typeof navigator !== 'undefined' && navigator.platform && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const eventParams = {
+      key: 's',
+      code: 'KeyS',
+      keyCode: 83,
+      which: 83,
+      ctrlKey: !isMac,
+      metaKey: isMac,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true
+    };
+
+    const evt = new KeyboardEvent('keydown', eventParams);
+    document.dispatchEvent(evt);
+    window.dispatchEvent(evt);
+  }
+
+  /**
+   * Open ChatGPT's sidebar using native buttons or keyboard shortcut fallback.
+   */
+  function openNativeSidebar() {
+    const candidateSelectors = [
+      'button[data-testid="open-sidebar-button"]',
+      'button[aria-label*="Open sidebar" i]',
+      'button[aria-label*="open sidebar" i]',
+      'button[title*="Open sidebar" i]',
+      'button[aria-controls="stage-popover-sidebar"]',
+      'button[aria-controls="stage-slideover-sidebar"]',
+      'button[aria-label*="sidebar" i]',
+      '[data-testid*="sidebar" i]'
+    ];
+
+    for (const sel of candidateSelectors) {
+      const btn = document.querySelector(sel);
+      if (btn && typeof btn.click === 'function') {
+        btn.click();
+        return true;
+      }
+    }
+
+    // Keyboard shortcut trigger
+    triggerSidebarShortcut();
+    return true;
+  }
+
+  /**
+   * Ensure a floating sidebar toggle button exists when the sidebar is collapsed,
+   * giving the user an unmissable, reliable 1-click restore mechanism.
+   */
+  function updateFloatingSidebarToggle() {
+    const existing = document.getElementById(FLOATING_TOGGLE_ID);
+    const sidebarVisible = isSidebarOpen();
+
+    if (sidebarVisible) {
+      if (existing) {
+        existing.style.display = 'none';
+      }
+      return;
+    }
+
+    // Sidebar is collapsed: show the floating toggle
+    if (existing) {
+      existing.style.display = 'flex';
+      return;
+    }
+
+    if (!document.body) return;
+
+    const btn = document.createElement('button');
+    btn.id = FLOATING_TOGGLE_ID;
+    btn.type = 'button';
+    btn.title = 'Open ChatGPT Sidebar (Ctrl+Shift+S)';
+    btn.setAttribute('aria-label', 'Open ChatGPT Sidebar');
+    btn.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="9" y1="3" x2="9" y2="21"></line>
+      </svg>
+      <span>Open Sidebar</span>
+    `;
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openNativeSidebar();
+      setTimeout(updateFloatingSidebarToggle, 250);
+    });
+
+    document.body.appendChild(btn);
   }
 
   /**
@@ -77,8 +196,9 @@
    */
   function applyStyles(settings) {
     const docEl = document.documentElement;
+    const isDefaultNoImage = settings && settings.themeId === 'default' && !settings.bgImage;
 
-    if (!settings || !settings.enabled) {
+    if (!settings || !settings.enabled || isDefaultNoImage) {
       docEl.classList.remove('cgts-active');
       removeBackgroundLayer();
       docEl.style.removeProperty('--cgts-bg-color');
@@ -89,6 +209,7 @@
       docEl.style.removeProperty('--cgts-bg-position');
       docEl.style.removeProperty('--cgts-bg-size');
       docEl.style.removeProperty('--cgts-scrim-gradient');
+      updateFloatingSidebarToggle();
       return;
     }
 
@@ -124,6 +245,8 @@
     docEl.style.setProperty('--cgts-bg-position', cssPos);
     docEl.style.setProperty('--cgts-bg-size', settings.bgSize || 'cover');
     docEl.style.setProperty('--cgts-scrim-gradient', scrimValue);
+
+    updateFloatingSidebarToggle();
   }
 
   /**
@@ -139,7 +262,11 @@
     if (!document.body) return;
 
     observer = new MutationObserver(() => {
-      if (!currentSettings || !currentSettings.enabled || isReattaching) return;
+      const isDefaultNoImage = currentSettings && currentSettings.themeId === 'default' && !currentSettings.bgImage;
+      if (!currentSettings || !currentSettings.enabled || isDefaultNoImage || isReattaching) {
+        updateFloatingSidebarToggle();
+        return;
+      }
 
       const layer = document.getElementById(BG_LAYER_ID);
       const main = getMainContainer();
@@ -150,12 +277,14 @@
       if (needsAttachment) {
         isReattaching = true;
         requestAnimationFrame(() => {
-          if (currentSettings && currentSettings.enabled) {
+          if (currentSettings && currentSettings.enabled && !isDefaultNoImage) {
             ensureBackgroundLayer();
           }
           isReattaching = false;
         });
       }
+
+      updateFloatingSidebarToggle();
     });
 
     observer.observe(document.body, {
@@ -201,11 +330,9 @@
       currentSettings = sanitized;
       applyStyles(sanitized);
 
-      if (sanitized.enabled && !observer) {
+      const isDefaultNoImage = sanitized.themeId === 'default' && !sanitized.bgImage;
+      if (sanitized.enabled && !isDefaultNoImage && !observer) {
         setupDOMObserver();
-      } else if (!sanitized.enabled && observer) {
-        observer.disconnect();
-        observer = null;
       }
     });
   }
@@ -224,8 +351,18 @@
 
         const onReady = () => {
           applyStyles(currentSettings);
-          if (currentSettings.enabled) {
-            setupDOMObserver();
+          setupDOMObserver();
+          updateFloatingSidebarToggle();
+
+          // Auto-recover sidebar if collapsed on initial mount
+          if (!hasAttemptedInitialSidebarRestore) {
+            hasAttemptedInitialSidebarRestore = true;
+            setTimeout(() => {
+              if (!isSidebarOpen()) {
+                openNativeSidebar();
+              }
+              updateFloatingSidebarToggle();
+            }, 600);
           }
         };
 

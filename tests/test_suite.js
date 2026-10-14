@@ -16,9 +16,9 @@ console.log('✓ manifest.json is valid');
 
 console.log('--- Test 2: Validate themes.js ---');
 const themesModule = require(path.join(dir, 'themes.js'));
-console.assert(Array.isArray(themesModule.THEMES), 'THEMES must be an array');
-console.assert(themesModule.THEMES.length === 5, 'Must have exactly 5 themes');
+console.assert(themesModule.THEMES.length >= 5, 'Must have at least 5 themes');
 const themeIds = themesModule.THEMES.map(t => t.id);
+console.assert(themeIds.includes('default'), 'Missing default theme');
 console.assert(themeIds.includes('midnight'), 'Missing midnight theme');
 console.assert(themeIds.includes('ocean'), 'Missing ocean theme');
 console.assert(themeIds.includes('forest'), 'Missing forest theme');

@@ -222,15 +222,25 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSettings.bgColor = theme.bgColor;
     currentSettings.accentColor = theme.accentColor;
 
+    const updatePayload = {
+      themeId: theme.id,
+      bgColor: theme.bgColor,
+      accentColor: theme.accentColor
+    };
+
+    if (theme.id === 'default') {
+      currentSettings.bgImage = null;
+      currentSettings.bgOriginalImage = null;
+      updateImageThumbnailUI();
+      updatePayload.bgImage = null;
+      updatePayload.bgOriginalImage = null;
+    }
+
     updatePresetSelectionUI();
     updateBgColorUI(theme.bgColor);
     updateAccentColorUI(theme.accentColor);
 
-    saveSettingsBatch({
-      themeId: theme.id,
-      bgColor: theme.bgColor,
-      accentColor: theme.accentColor
-    }, () => {
+    saveSettingsBatch(updatePayload, () => {
       showStatus(`${theme.name} theme applied`, 'success');
     });
   }

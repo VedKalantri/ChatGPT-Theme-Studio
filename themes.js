@@ -21,6 +21,16 @@
    */
   const THEMES = [
     {
+      id: 'default',
+      name: 'Default',
+      mode: 'dark',
+      bgColor: '#212121',
+      accentColor: '#10a37f',
+      textColor: '#ececec',
+      surfaceColor: 'transparent',
+      description: 'Standard ChatGPT dark theme with clean interface and no background image.'
+    },
+    {
       id: 'midnight',
       name: 'Midnight',
       mode: 'dark',
